@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nodalview | Broker Model Pricing</title>
+  <title>Nodalview | Pricing Configurator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
     a { color: #3965ff; text-decoration: none; }
     a:hover { text-decoration: underline; }
     h1, h2, h3, .product-title, .tier-name, .summary-section-title,
-    .plan-label, .plan-badge, .price-amount, .feat-name {
+    .plan-label, .plan-badge, .price-amount, .feat-name, .model-opt {
       font-family: 'Poppins', sans-serif;
     }
 
@@ -43,6 +43,34 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 16px;
+    }
+
+    /* ── Model Selector (Broker / Agency) ── */
+    .model-selector {
+      display: inline-flex;
+      background: #eef1fb;
+      border-radius: 14px;
+      padding: 5px;
+      gap: 4px;
+      margin-top: 22px;
+    }
+    .model-opt {
+      padding: 10px 24px;
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      font-weight: 700;
+      color: #68769f;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .model-opt:hover { color: #1b2559; }
+    .model-opt.active {
+      background: #1b2559;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(27,37,89,.25);
     }
 
     /* ── Billing Selector ── */
@@ -175,7 +203,48 @@
       line-height: 1.6;
     }
 
-    /* ── Package detail (single broker package per product) ── */
+    /* ── Tier Selector (Agency model) ── */
+    .tier-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .tier-option {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+      text-align: center;
+    }
+    .tier-option:hover { border-color: #93b4ff; }
+    .tier-option.selected {
+      border-color: #3965ff;
+      box-shadow: 0 0 0 1.5px #3965ff;
+      background: #f0f4ff;
+    }
+    .tier-radio {
+      width: 20px; height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .tier-option.selected .tier-radio { border-color: #3965ff; }
+    .tier-option.selected .tier-radio::after {
+      content: '';
+      width: 10px; height: 10px;
+      background: #3965ff;
+      border-radius: 50%;
+    }
+    .tier-name { font-size: 15px; font-weight: 700; color: #1b2559; margin-bottom: 4px; }
+    .tier-detail { font-size: 13px; color: #a3aed0; line-height: 1.4; }
+    .tier-price { font-size: 13px; color: #3965ff; font-weight: 700; margin-top: 6px; }
+
+    /* ── Package detail (single Broker package per product) ── */
     .package-detail {
       display: flex;
       align-items: center;
@@ -409,6 +478,7 @@
       .summary-card { position: static; }
       .features-grid { grid-template-columns: 1fr 1fr; }
       .feature-category { grid-column: 1 / -1; padding: 16px 0 4px; font-weight: 700; }
+      .tier-selector { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -417,12 +487,16 @@
 <!-- ══════════════ CONFIGURATOR ══════════════ -->
 <div class="config-header">
   <div class="header-row">
-    <h1>Partnership &ndash; Broker Model Pricing</h1>
+    <h1 id="page-title">Partnership &ndash; Broker Model Pricing</h1>
     <div class="billing-selector" id="billing-selector">
       <button class="billing-opt active" data-billing="monthly" onclick="setBilling('monthly')">Monthly</button>
       <button class="billing-opt" data-billing="annual-monthly" onclick="setBilling('annual-monthly')">Annual <span class="billing-badge">1 MONTH FREE</span></button>
       <button class="billing-opt" data-billing="annual-upfront" onclick="setBilling('annual-upfront')">Annual upfront <span class="billing-badge">2 MONTHS FREE</span></button>
     </div>
+  </div>
+  <div class="model-selector" id="model-selector">
+    <button class="model-opt active" data-model="broker" onclick="setModel('broker')">Broker Model</button>
+    <button class="model-opt" data-model="agency" onclick="setModel('agency')">Agency Model</button>
   </div>
 </div>
 
@@ -509,14 +583,12 @@
 
 <script>
 /* ════════════════════════════════════════
-   PRICING DATA — Partnership Broker Model (UK, GBP, monthly)
-   Prices, included assets & AI credits taken from the broker
-   model slide deck.
+   PRICING DATA — two models on one page (UK, GBP, monthly)
+     • broker : Partnership broker model (single fixed package per product)
+     • agency : Standard agency model (Starter / Standard / Pro tiers)
    ════════════════════════════════════════ */
-const PLATFORM = 25;        // Editing suite — always included
-const BASE_CREDITS = 25;    // Monthly AI credits included with the editing suite
 
-/* ── SVG Icons (matching Nodalview configurator style) ── */
+/* ── SVG Icons ── */
 const ICONS = {
   editing: '<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><path d="M16 4L8 28h16L16 4z" fill="#c084fc" opacity=".6"/><path d="M10 28L16 8l6 20" fill="#818cf8" opacity=".7"/><path d="M13 28l3-12 3 12" fill="#f472b6" opacity=".6"/></svg>',
   photos: '<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect x="4" y="8" width="12" height="16" rx="2" fill="#93c5fd"/><rect x="10" y="4" width="12" height="16" rx="2" fill="#60a5fa" opacity=".8"/><rect x="16" y="8" width="12" height="16" rx="2" fill="#3b82f6" opacity=".6"/></svg>',
@@ -525,64 +597,111 @@ const ICONS = {
   floorplans: '<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="3" fill="#a7f3d0"/><path d="M4 14h12v14M16 4v10M22 4v24M16 10h12" stroke="#059669" stroke-width="1.5" opacity=".5"/></svg>'
 };
 
-/* Each add-on is a single fixed broker package (no starter/standard/pro tiers). */
-const PRODUCT_DEFS = {
+const productKeys = ['photos', 'tours', 'videos', 'floorplans'];
+
+/* Shared per-product presentation (icon, title, description, shop CTA). */
+const PRODUCT_META = {
   photos: {
-    icon: ICONS.photos,
-    title: 'Photos',
-    price: 24,
-    assets: '80 Photos',
-    assetsLine: '80 photos/month',
-    credits: 10,
+    icon: ICONS.photos, title: 'Photos',
     desc: 'Elevate your property photos to professional standards with our Smart Fusion technology. <a href="https://nodalview.com/real-estate-photography-hdr" target="_blank">Learn more</a>',
     showShopCta: true
   },
   tours: {
-    icon: ICONS.tours,
-    title: 'Virtual Tours',
-    price: 18,
-    assets: '3 Virtual Tours',
-    assetsLine: '3 virtual tours/month',
-    credits: 10,
+    icon: ICONS.tours, title: 'Virtual Tours',
     desc: 'Offer immersive property experiences with interactive virtual tours. <a href="https://nodalview.com/virtual-tour-software" target="_blank">Learn more</a>',
     showShopCta: false
   },
   videos: {
-    icon: ICONS.videos,
-    title: 'Videos',
-    price: 18,
-    assets: '3 Videos',
-    assetsLine: '3 videos/month',
-    credits: 10,
+    icon: ICONS.videos, title: 'Videos',
     desc: 'Produce exceptional real estate videos effortlessly and highlight your properties like never before. <a href="https://nodalview.com/real-estate-video-app" target="_blank">Learn more</a>',
     showShopCta: false
   },
   floorplans: {
-    icon: ICONS.floorplans,
-    title: 'Floor Plans',
-    price: 36,
-    assets: '3 Floor Plans',
-    assetsLine: '3 floor plans/month',
-    credits: 10,
+    icon: ICONS.floorplans, title: 'Floor Plans',
     desc: 'Enhance your listings with professional floor plans to help buyers visualise the layout of your properties. <a href="https://nodalview.com/floor-plan-app" target="_blank">Learn more</a>',
     showShopCta: false
+  }
+};
+
+/* Model-specific pricing. */
+const MODELS = {
+  broker: {
+    title: 'Partnership &ndash; Broker Model Pricing',
+    platform: 25,
+    baseCredits: 25,
+    tiered: false,
+    editingDesc: 'Edit photos, remove unwanted objects, add new furniture, or enhance skies &mdash; all with the power of AI technology. <a href="https://nodalview.com/ai-photo-editor" target="_blank">Learn more</a>',
+    products: {
+      photos:     { price: 24, assets: '80 Photos',       assetsLine: '80 photos/month',       credits: 10 },
+      tours:      { price: 18, assets: '3 Virtual Tours',  assetsLine: '3 virtual tours/month',  credits: 10 },
+      videos:     { price: 18, assets: '3 Videos',         assetsLine: '3 videos/month',         credits: 10 },
+      floorplans: { price: 36, assets: '3 Floor Plans',    assetsLine: '3 floor plans/month',    credits: 10 }
+    }
+  },
+  agency: {
+    title: 'Agency Model Pricing',
+    platform: 49,
+    baseCredits: 45,
+    tiered: true,
+    tierCredits: { starter: 10, standard: 20, pro: 30 },
+    noCreditProducts: ['floorplans'],
+    editingDesc: 'Edit photos, remove unwanted objects, add new furniture, or enhance skies &mdash; all with the power of AI Smart Fusion technology. <a href="https://nodalview.com/ai-photo-editor" target="_blank">Learn more</a>',
+    products: {
+      photos: {
+        prices: { starter: 30, standard: 54, pro: 96 },
+        tiers: {
+          starter:  { name: '100 photos/month', detail: 'Professional photos are key to selling your property', line: '100 photos/month' },
+          standard: { name: '200 photos/month', detail: 'Most popular choice', line: '200 photos/month' },
+          pro:      { name: '400 photos/month', detail: 'For high-volume agencies', line: '400 photos/month' }
+        }
+      },
+      tours: {
+        prices: { starter: 30, standard: 54, pro: 96 },
+        tiers: {
+          starter:  { name: '5 virtual tours/month', detail: 'Virtual tours trigger 50% more interest than photos', line: '5 virtual tours/month' },
+          standard: { name: '10 virtual tours/month', detail: 'Most popular choice', line: '10 virtual tours/month' },
+          pro:      { name: '20 virtual tours/month', detail: 'For high-volume agencies', line: '20 virtual tours/month' }
+        }
+      },
+      videos: {
+        prices: { starter: 30, standard: 54, pro: 96 },
+        tiers: {
+          starter:  { name: '5 videos/month', detail: 'Professional property videos', line: '5 videos/month' },
+          standard: { name: '10 videos/month', detail: '85% of customers prefer this', line: '10 videos/month' },
+          pro:      { name: '20 videos/month', detail: 'For high-volume agencies', line: '20 videos/month' }
+        }
+      },
+      floorplans: {
+        prices: { starter: 60, standard: 108, pro: 192 },
+        tiers: {
+          starter:  { name: '5 floor plans/month', detail: 'Accurate property layouts', line: '5 floor plans/month' },
+          standard: { name: '10 floor plans/month', detail: 'Most popular choice', line: '10 floor plans/month' },
+          pro:      { name: '20 floor plans/month', detail: 'For high-volume agencies', line: '20 floor plans/month' }
+        }
+      }
+    }
   }
 };
 
 /* ════════════════════════════════════════
    STATE
    ════════════════════════════════════════ */
-const state = { billing: 'monthly', products: {} };
-const productKeys = ['photos', 'tours', 'videos', 'floorplans'];
-productKeys.forEach(k => { state.products[k] = { on: false }; });
+const state = { model: 'broker', billing: 'monthly', products: {} };
+
+function initProductState() {
+  state.products = {};
+  productKeys.forEach(k => { state.products[k] = { on: false, tier: 'starter' }; });
+}
 
 /* ════════════════════════════════════════
    RENDER PRODUCT CARDS
    ════════════════════════════════════════ */
 function renderProducts() {
+  const M = MODELS[state.model];
   const col = document.getElementById('products-column');
   let html = '';
 
+  /* Editing suite — always included */
   html += `
     <div class="product-card active">
       <div class="product-card-header">
@@ -596,25 +715,26 @@ function renderProducts() {
         </div>
       </div>
       <div class="product-body">
-        <p class="product-description">Edit photos, remove unwanted objects, add new furniture, or enhance skies &mdash; all with the power of AI technology. <a href="https://nodalview.com/ai-photo-editor" target="_blank">Learn more</a></p>
+        <p class="product-description">${M.editingDesc}</p>
         <div class="package-detail">
           <div class="package-badges">
-            <span class="pkg-badge credits">${BASE_CREDITS} AI credits</span>
+            <span class="pkg-badge credits">${M.baseCredits} AI credits</span>
           </div>
-          <div class="pkg-price">&pound;${PLATFORM}<span style="font-size:14px;font-weight:500;color:#a3aed0;">/mo</span></div>
+          <div class="pkg-price">&pound;${M.platform}<span style="font-size:14px;font-weight:500;color:#a3aed0;">/mo</span></div>
         </div>
       </div>
     </div>`;
 
   productKeys.forEach(key => {
-    const def = PRODUCT_DEFS[key];
+    const meta = PRODUCT_META[key];
+    const p = M.products[key];
 
     html += `
     <div class="product-card" id="card-${key}">
       <div class="product-card-header">
         <div class="product-title">
-          <div class="product-icon">${def.icon}</div>
-          ${def.title}
+          <div class="product-icon">${meta.icon}</div>
+          ${meta.title}
         </div>
         <div class="product-label-row">
           <span id="label-${key}">Add to your plan, or pay as you go</span>
@@ -622,17 +742,34 @@ function renderProducts() {
         </div>
       </div>
       <div class="product-body">
-        <p class="product-description">${def.desc}</p>
-        <div id="tiers-${key}" style="display:none;">
+        <p class="product-description">${meta.desc}</p>
+        <div id="tiers-${key}" style="display:none;">`;
+
+    if (M.tiered) {
+      html += `<div class="tier-selector">`;
+      ['starter', 'standard', 'pro'].forEach((tier, i) => {
+        const info = p.tiers[tier];
+        html += `
+            <div class="tier-option${i === 0 ? ' selected' : ''}" data-tier="${tier}" onclick="selectTier('${key}','${tier}',this)">
+              <div class="tier-radio"></div>
+              <div class="tier-name">${info.name}</div>
+              <div class="tier-detail">${info.detail}</div>
+              <div class="tier-price" data-base="${p.prices[tier]}">+ &pound;${p.prices[tier]}/mo</div>
+            </div>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `
           <div class="package-detail">
             <div class="package-badges">
-              <span class="pkg-badge assets">${def.assets}</span>
-              <span class="pkg-badge credits">${def.credits} AI credits</span>
+              <span class="pkg-badge assets">${p.assets}</span>
+              <span class="pkg-badge credits">${p.credits} AI credits</span>
             </div>
-            <div class="pkg-price" data-base="${def.price}">+ &pound;${def.price}<span style="font-size:14px;font-weight:500;color:#a3aed0;">/mo</span></div>
+            <div class="pkg-price" data-base="${p.price}">+ &pound;${p.price}<span style="font-size:14px;font-weight:500;color:#a3aed0;">/mo</span></div>
           </div>`;
+    }
 
-    if (def.showShopCta) {
+    if (meta.showShopCta) {
       html += `
           <div class="shop-cta">&#127903; Need a professional kit for shooting your photos and 360&deg; virtual tours? <a href="https://shop.nodalview.com/collections/kits" target="_blank">Visit our shop</a></div>`;
     }
@@ -660,12 +797,24 @@ function renderProducts() {
 /* ════════════════════════════════════════
    INTERACTION FUNCTIONS
    ════════════════════════════════════════ */
+function setModel(mode) {
+  state.model = mode;
+  document.getElementById('page-title').innerHTML = MODELS[mode].title;
+  document.querySelectorAll('.model-opt').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.model === mode);
+  });
+  initProductState();
+  renderProducts();
+  updateBilledPrices();
+  updateSummary();
+}
+
 function setBilling(mode) {
   state.billing = mode;
   document.querySelectorAll('.billing-opt').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.billing === mode);
   });
-  updateTierPrices();
+  updateBilledPrices();
   updateSummary();
 }
 
@@ -681,31 +830,48 @@ function toggleProduct(product) {
   updateSummary();
 }
 
+function selectTier(product, tier, el) {
+  state.products[product].tier = tier;
+  el.closest('.tier-selector').querySelectorAll('.tier-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  updateSummary();
+}
+
 function billedPrice(base) {
   if (state.billing === 'annual-monthly') return Math.round(base * 11 / 12);
   if (state.billing === 'annual-upfront') return Math.round(base * 10 / 12);
   return base;
 }
 
-function updateTierPrices() {
-  document.querySelectorAll('.pkg-price[data-base]').forEach(el => {
-    const base = parseInt(el.dataset.base);
-    el.innerHTML = '+ &pound;' + billedPrice(base) + '<span style="font-size:14px;font-weight:500;color:#a3aed0;">/mo</span>';
+function updateBilledPrices() {
+  document.querySelectorAll('[data-base]').forEach(el => {
+    const v = billedPrice(parseInt(el.dataset.base));
+    if (el.classList.contains('pkg-price')) {
+      el.innerHTML = '+ &pound;' + v + '<span style="font-size:14px;font-weight:500;color:#a3aed0;">/mo</span>';
+    } else {
+      el.innerHTML = '+ &pound;' + v + '/mo';
+    }
   });
 }
 
 function updateSummary() {
-  let total = PLATFORM;
-  let aiCredits = BASE_CREDITS;
+  const M = MODELS[state.model];
+  let total = M.platform;
+  let aiCredits = M.baseCredits;
 
   const items = ['All core features', 'Unlimited properties', 'Unlimited basic AI edits'];
 
   for (const [key, prod] of Object.entries(state.products)) {
-    if (prod.on) {
-      const def = PRODUCT_DEFS[key];
-      total += def.price;
-      aiCredits += def.credits;
-      items.push(def.assetsLine);
+    if (!prod.on) continue;
+    const p = M.products[key];
+    if (M.tiered) {
+      total += p.prices[prod.tier];
+      items.push(p.tiers[prod.tier].line);
+      if (!(M.noCreditProducts || []).includes(key)) aiCredits += M.tierCredits[prod.tier];
+    } else {
+      total += p.price;
+      aiCredits += p.credits;
+      items.push(p.assetsLine);
     }
   }
 
@@ -719,7 +885,12 @@ function updateSummary() {
   else if (activeCount === 2) { dot.className = 'plan-dot expert'; name.textContent = 'Professional'; }
   else { dot.className = 'plan-dot expert'; name.textContent = 'Expert'; }
 
-  items.unshift('1 User included');
+  if (M.tiered) {
+    const u = Math.max(1, Math.floor(total / 50));
+    items.unshift(u + (u === 1 ? ' User included' : ' Users included'));
+  } else {
+    items.unshift('1 User included');
+  }
 
   const display = billedPrice(total);
   document.getElementById('price').textContent = display;
@@ -733,28 +904,33 @@ function updateSummary() {
 
 /* ═══════ SAVE & SHARE ═══════ */
 function saveAndShare() {
+  const M = MODELS[state.model];
+  const modelLabel = state.model === 'broker' ? 'Partnership – Broker Model' : 'Agency Model';
   const activeCount = Object.values(state.products).filter(p => p.on).length;
   let planName = 'Editor';
   if (activeCount === 1) planName = 'Discovery';
   else if (activeCount === 2) planName = 'Professional';
   else if (activeCount >= 3) planName = 'Expert';
 
-  let total = PLATFORM;
+  let total = M.platform;
   const billingLabels = { 'monthly': 'Monthly', 'annual-monthly': 'Annual — billed monthly (1 month free)', 'annual-upfront': 'Annual — paid upfront (2 months free)' };
   const lines = [];
   lines.push('Hi,');
   lines.push('');
-  lines.push('I\'ve put together the following Partnership – Broker Model configuration and would like to discuss next steps.');
+  lines.push('I\'ve put together the following ' + modelLabel + ' configuration and would like to discuss next steps.');
   lines.push('');
   lines.push(planName + ' Plan — ' + billingLabels[state.billing]);
   lines.push('');
-  lines.push('— Editing Suite (included): £' + PLATFORM + '/mo — ' + BASE_CREDITS + ' AI credits');
+  lines.push('— Editing Suite (included): £' + M.platform + '/mo — ' + M.baseCredits + ' AI credits');
 
   for (const [key, prod] of Object.entries(state.products)) {
-    if (prod.on) {
-      const def = PRODUCT_DEFS[key];
-      total += def.price;
-      lines.push('— ' + def.title + ': ' + def.assets + ' + ' + def.credits + ' AI credits — £' + def.price + '/mo');
+    if (!prod.on) continue;
+    const p = M.products[key];
+    total += M.tiered ? p.prices[prod.tier] : p.price;
+    if (M.tiered) {
+      lines.push('— ' + PRODUCT_META[key].title + ': ' + p.tiers[prod.tier].name + ' — £' + p.prices[prod.tier] + '/mo');
+    } else {
+      lines.push('— ' + PRODUCT_META[key].title + ': ' + p.assets + ' + ' + p.credits + ' AI credits — £' + p.price + '/mo');
     }
   }
 
@@ -764,9 +940,10 @@ function saveAndShare() {
 
   // Build shareable URL
   const params = new URLSearchParams();
+  params.set('model', state.model);
   params.set('billing', state.billing);
   for (const [key, prod] of Object.entries(state.products)) {
-    if (prod.on) params.set(key, 'on');
+    if (prod.on) params.set(key, M.tiered ? prod.tier : 'on');
   }
   const shareUrl = window.location.origin + window.location.pathname + '?' + params.toString();
   lines.push('');
@@ -776,26 +953,43 @@ function saveAndShare() {
   lines.push('');
   lines.push('Thank you');
 
-  const subject = 'Nodalview Broker Model Pricing — ' + planName + ' Plan (£' + display + '/mo)';
+  const subject = 'Nodalview Pricing — ' + modelLabel + ' — ' + planName + ' Plan (£' + display + '/mo)';
   const body = lines.join('\n');
   window.location.href = 'mailto:info@nodalview.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 }
 
 /* ═══════ RESTORE FROM URL ═══════ */
 function restoreFromUrl() {
-  const p = new URLSearchParams(window.location.search);
-  const billing = p.get('billing');
-  if (['annual-monthly','annual-upfront'].includes(billing)) setBilling(billing);
+  const params = new URLSearchParams(window.location.search);
+  const model = params.get('model');
+  if (model === 'agency' || model === 'broker') setModel(model);
+  const billing = params.get('billing');
+  if (['annual-monthly', 'annual-upfront'].includes(billing)) setBilling(billing);
+
+  const M = MODELS[state.model];
   productKeys.forEach(key => {
-    if (p.get(key) === 'on') {
+    const val = params.get(key);
+    if (!val) return;
+    if (M.tiered) {
+      if (!['starter', 'standard', 'pro'].includes(val)) return;
+      toggleProduct(key);
+      if (val !== 'starter') {
+        state.products[key].tier = val;
+        const card = document.getElementById('card-' + key);
+        card.querySelectorAll('.tier-option').forEach(o => {
+          o.classList.toggle('selected', o.dataset.tier === val);
+        });
+        updateSummary();
+      }
+    } else if (val === 'on') {
       toggleProduct(key);
     }
   });
 }
 
 /* ═══════ INIT ═══════ */
-renderProducts();
-updateSummary();
+initProductState();
+setModel('broker');
 restoreFromUrl();
 </script>
 </body>
