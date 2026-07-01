@@ -498,8 +498,8 @@
     </div>
   </div>
   <div class="model-selector" id="model-selector">
-    <button class="model-opt active" data-model="broker" onclick="setModel('broker')">Broker Model</button>
-    <button class="model-opt" data-model="agency" onclick="setModel('agency')">Agency Model</button>
+    <button class="model-opt active" data-model="agency" onclick="setModel('agency')">Agency Model</button>
+    <button class="model-opt" data-model="broker" onclick="setModel('broker')">Broker Model</button>
   </div>
 </div>
 
@@ -516,7 +516,7 @@
     </div>
     <div class="price-display">
       <div class="price-amount">
-        <span class="currency">&pound;</span><span id="price">25</span>
+        <span class="currency">&pound;</span><span id="price">49</span>
         <span id="strike" class="price-strikethrough" style="display:none;"></span>
         <span class="period">/ month</span>
       </div>
@@ -689,7 +689,7 @@ const MODELS = {
 /* ════════════════════════════════════════
    STATE
    ════════════════════════════════════════ */
-const state = { model: 'broker', billing: 'monthly', products: {} };
+const state = { model: 'agency', billing: 'monthly', products: {} };
 
 function initProductState() {
   state.products = {};
@@ -991,7 +991,7 @@ function restoreFromUrl() {
 
 /* ═══════ INIT ═══════ */
 initProductState();
-setModel('broker');
+setModel('agency');
 restoreFromUrl();
 </script>
 </body>
